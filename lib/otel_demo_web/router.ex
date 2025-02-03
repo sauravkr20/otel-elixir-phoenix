@@ -8,6 +8,7 @@ defmodule OtelDemoWeb.Router do
 
   scope "/api", OtelDemoWeb do
     pipe_through :api
-    resources "/users", UserController, except: [:new, :edit]
+    get "/test", TestController, :index
+    # resources "/users", UserController, except: [:new, :edit]
   end
 end
