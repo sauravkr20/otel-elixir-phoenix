@@ -48,4 +48,5 @@ defmodule OtelDemoWeb.Endpoint do
   plug Plug.Head
   plug Plug.Session, @session_options
   plug OtelDemoWeb.Router
+
 end
