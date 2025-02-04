@@ -78,7 +78,7 @@ config :opentelemetry,
 
 config :opentelemetry_exporter,
   otlp_protocol: :http_protobuf,
-  otlp_endpoint: System.get_env("OTEL_EXPORTER_ENDPOINT"),
+  otlp_endpoint: System.get_env("OTEL_EXPORTER_ENDPOINT", "http://13.233.237.75:4318"),
   otlp_headers: []
 
 # Override service name and version if needed
