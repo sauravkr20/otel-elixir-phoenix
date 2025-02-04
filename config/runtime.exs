@@ -65,6 +65,20 @@ if config_env() == :prod do
     ],
     secret_key_base: secret_key_base
 
+  # config/runtime.exs
+  config :opentelemetry,
+    span_processor: :batch,
+    traces_exporter: {:otel_exporter_stdout, []}  # Fixed console exporter
+
+  config :opentelemetry_phoenix,
+    tracer: :otel_tracer_default  # Consistent tracer name
+
+  config :opentelemetry_exporter,
+    otlp_protocol: :http_protobuf,
+    otlp_endpoint: "http://13.233.237.75:4318",  # Consolidated endpoint
+    otlp_headers: [],
+    tls: [insecure: true]
+
   # ## SSL Support
   #
   # To get SSL working, you will need to add the `https` key
@@ -97,3 +111,6 @@ if config_env() == :prod do
   #
   # Check `Plug.SSL` for all available options in `force_ssl`.
 end
+
+
+# OTEL_EXPORTER_ENDPOINT=http://13.233.237.75:4318

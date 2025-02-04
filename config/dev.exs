@@ -1,5 +1,14 @@
 import Config
 
+File.read!(".env.dev")
+|> String.split("\n")
+|> Enum.each(fn line ->
+  if String.contains?(line, "=") do
+    [key, value] = String.split(line, "=", parts: 2)
+    System.put_env(String.trim(key), String.trim(value, "\""))
+  end
+end)
+
 # Configure your database
 config :otel_demo, OtelDemo.Repo,
   username: "postgres",
@@ -61,3 +70,29 @@ config :phoenix, :stacktrace_depth, 20
 
 # Initialize plugs at runtime for faster development compilation
 config :phoenix, :plug_init_mode, :runtime
+
+# config/dev.exs
+config :opentelemetry,
+  span_processor: :batch,
+  traces_exporter: {:opentelemetry_exporter, %{}}
+
+config :opentelemetry_exporter,
+  otlp_protocol: :http_protobuf,
+  otlp_endpoint: System.get_env("OTEL_EXPORTER_ENDPOINT", "http://13.233.237.75:4318"),
+  otlp_headers: []
+
+# Override service name and version if needed
+config :opentelemetry,
+  resource: [
+    service: %{
+      name: System.get_env("OTEL_SERVICE_NAME", "otel_demo"),
+      version: System.get_env("OTEL_SERVICE_VERSION", "1.0.0")
+    }
+  ]
+
+# ["http://13.233.237.75:4318"]
+
+
+# config :opentelemetry,
+#   span_processor: :batch,
+#   traces_exporter: {:otel_exporter_stdout, []}
