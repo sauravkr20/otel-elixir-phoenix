@@ -74,12 +74,12 @@ config :phoenix, :plug_init_mode, :runtime
 # config/dev.exs
 config :opentelemetry,
   span_processor: :batch,
-  traces_exporter: {:opentelemetry_exporter, %{}}
+  traces_exporter: {:otel_exporter_stdout, %{}}
 
-config :opentelemetry_exporter,
-  otlp_protocol: :http_protobuf,
-  otlp_endpoint: System.get_env("OTEL_EXPORTER_ENDPOINT", "http://13.233.237.75:4318"),
-  otlp_headers: []
+# config :opentelemetry_exporter,
+#   otlp_protocol: :http_protobuf,
+#   otlp_endpoint: System.get_env("OTEL_EXPORTER_ENDPOINT", "http://13.233.237.75:4318"),
+#   otlp_headers: []
 
 # Override service name and version if needed
 config :opentelemetry,

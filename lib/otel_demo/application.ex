@@ -5,7 +5,7 @@ defmodule OtelDemo.Application do
   @impl true
   def start(_type, _args) do
     # Initialize OpenTelemetry integrations
-    :ok = OpentelemetryPhoenix.setup()
+    # :ok = OpentelemetryPhoenix.setup()
 
     children = [
       OtelDemoWeb.Telemetry,

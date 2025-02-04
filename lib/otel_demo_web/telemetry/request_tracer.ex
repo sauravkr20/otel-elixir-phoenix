@@ -39,3 +39,6 @@ defmodule OtelDemoWeb.Plugs.RequestTracer do
     """)
   end
 end
+
+
+# TODO add proper attributes to the parent span and trace

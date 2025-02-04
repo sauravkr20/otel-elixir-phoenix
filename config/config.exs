@@ -39,12 +39,9 @@ config :opentelemetry,
     }
   ]
 
-config :opentelemetry_phoenix,
-  tracer: :otel_tracer_default  # Changed to default tracer
-
-config :opentelemetry_cowboy,
-  tracer: :otel_tracer_default   # Changed to default tracer
-
+# config :opentelemetry_phoenix,
+#   tracer: :otel_tracer_default,  # Changed to default tracer
+#   disabled: true
 
 
 # Import environment specific config. This must remain at the bottom

@@ -11,7 +11,7 @@ defmodule OtelDemoWeb.TestController do
 
     ctx = perform_operation(ctx)
 
-    ctx = Tracer.end_span(ctx)
+    _ctx = Tracer.end_span(ctx)
     text(conn, "OK")
   end
 
