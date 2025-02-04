@@ -75,6 +75,7 @@ config :phoenix, :plug_init_mode, :runtime
 config :opentelemetry,
   span_processor: :batch,
   traces_exporter: {:otel_exporter_stdout, %{}}
+  # traces_exporter: {:opentelemetry_exporter, %{}}
 
 # config :opentelemetry_exporter,
 #   otlp_protocol: :http_protobuf,

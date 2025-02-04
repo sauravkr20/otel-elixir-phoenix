@@ -1,12 +1,10 @@
 defmodule OtelDemoWeb.Context do
   @moduledoc """
-  Tree-based context management for distributed tracing
+  Represents a node in the span context tree.
+  Each node stores its own span_ctx, a reference to its parent,
+  and any child contexts.
   """
-  defstruct [
-    :span_ctx,
-    :parent,
-    children: []
-  ]
+  defstruct [:span_ctx, :parent, children: []]
 
   def new_root do
     %__MODULE__{
