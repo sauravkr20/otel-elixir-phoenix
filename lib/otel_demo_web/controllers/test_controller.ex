@@ -5,13 +5,12 @@ defmodule OtelDemoWeb.TestController do
 
   def index(conn, _params) do
     ctx = conn.assigns.otel_ctx
-    IO.inspect(ctx, label: "Context")
     span_info = Tracer.start_span("test_action", ctx)
     {ctx, _, _} = span_info
 
-    {ctx, _result} = do_something(ctx)
+    do_something(ctx)
 
-    ctx = Tracer.end_span(span_info)
+    Tracer.end_span(span_info)
     text(conn, "Test endpoint")
   end
 
