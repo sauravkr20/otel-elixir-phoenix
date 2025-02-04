@@ -1,19 +1,26 @@
-
 defmodule OtelDemoWeb.Context do
-  defstruct [:span_ctx, :parent_ctx]
+  @moduledoc """
+  Tree-based context management for distributed tracing
+  """
+  defstruct [
+    :span_ctx,
+    :parent,
+    children: []
+  ]
 
-  def from_current do
-    current_ctx = OpenTelemetry.Tracer.current_span_ctx()
+  def new_root do
     %__MODULE__{
-      span_ctx: current_ctx,
-      parent_ctx: nil
+      span_ctx: nil,
+      parent: nil,
+      children: []
     }
   end
 
-  def new(span_ctx) do
+  def new_node(span_ctx, parent) do
     %__MODULE__{
       span_ctx: span_ctx,
-      parent_ctx: nil
+      parent: parent,
+      children: []
     }
   end
 end

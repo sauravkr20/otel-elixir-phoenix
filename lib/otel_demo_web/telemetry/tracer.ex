@@ -1,65 +1,86 @@
 defmodule OtelDemoWeb.Tracer do
+  @moduledoc """
+  Tree-based OpenTelemetry tracer with proper context management
+  """
   require Logger
   require OpenTelemetry.Tracer
 
-  def start_span(name, ctx) do
-    parent_ctx = ctx.span_ctx
+  alias OtelDemoWeb.Context
 
-    # Start new span with explicit parent context
-    span_ctx = OpenTelemetry.Tracer.start_span(name, %{parent: parent_ctx})
+  @doc """
+  Starts a new span and updates the context tree
+  """
+  def start_span(name, %Context{} = ctx) do
+    parent_span = ctx.span_ctx
+    span_ctx = OpenTelemetry.Tracer.start_span(name, %{parent: parent_span})
 
+    new_node = Context.new_node(span_ctx, ctx)
+    updated_ctx = put_in(ctx.children, [new_node | ctx.children])
+
+    log_span_start(name, span_ctx, parent_span)
+    new_node
+  end
+
+  @doc """
+  Ends a span and returns to parent context
+  """
+  def end_span(%Context{span_ctx: nil} = ctx), do: ctx
+
+  def end_span(%Context{span_ctx: span_ctx, parent: parent} = ctx) do
+    log_span_end(span_ctx, parent)
+    OpenTelemetry.Span.end_span(span_ctx)
+    parent || Context.new_root()
+  end
+
+  @doc """
+  Adds event to current span
+  """
+  def add_event(name, %Context{span_ctx: span_ctx} = ctx, attrs \\ %{}) do
+    if span_ctx do
+      OpenTelemetry.Span.add_event(span_ctx, name, attrs)
+      log_event(name, span_ctx)
+    else
+      Logger.error("Attempted to add event #{name} to nil span")
+    end
+    ctx
+  end
+
+  defp log_span_start(name, span_ctx, parent_span) do
+    span_id = OpenTelemetry.Span.hex_span_id(span_ctx)
+    trace_id = OpenTelemetry.Span.hex_trace_id(span_ctx)
+    parent_id = if parent_span, do: OpenTelemetry.Span.hex_span_id(parent_span), else: "no_parent_span"
+
+    Logger.info("""
+    Starting span: #{name}
+    │ Span ID: #{span_id}
+    │ Trace ID: #{trace_id}
+    └ Parent Span ID: #{parent_id}
+    """)
+  end
+
+  defp log_span_end(span_ctx, parent) do
+    span_id = OpenTelemetry.Span.hex_span_id(span_ctx)
+    trace_id = OpenTelemetry.Span.hex_trace_id(span_ctx)
+    parent_id = if parent && parent.span_ctx,
+                do: OpenTelemetry.Span.hex_span_id(parent.span_ctx),
+                else: "no_parent_span"
+
+    Logger.info("""
+    Completing span
+    │ Span ID: #{span_id}
+    │ Trace ID: #{trace_id}
+    └ Parent Span ID: #{parent_id}
+    """)
+  end
+
+  defp log_event(name, span_ctx) do
     span_id = OpenTelemetry.Span.hex_span_id(span_ctx)
     trace_id = OpenTelemetry.Span.hex_trace_id(span_ctx)
 
-    # Get parent ID after span creation
-    parent_id = case parent_ctx do
-      nil -> "no_parent_span"
-      :undefined -> "no_parent_span"
-      _ -> OpenTelemetry.Span.hex_span_id(parent_ctx)
-    end
-
-    Logger.info("Starting span: #{name} | Span ID: #{span_id} | Trace ID: #{trace_id} | Parent Span ID: #{parent_id}")
-
-    new_ctx = %{ctx | span_ctx: span_ctx, parent_ctx: parent_ctx}
-    {new_ctx, span_id, trace_id}
-  end
-
-  def end_span({ctx, span_id, trace_id}) do
-    case ctx.span_ctx do
-      nil ->
-        Logger.error("No span context found to end")
-        ctx
-      :undefined ->
-        Logger.error("Undefined span context to end")
-        ctx
-      span_ctx ->
-        parent_id = case ctx.parent_ctx do
-          nil -> "no_parent_span"
-          :undefined -> "no_parent_span"
-          parent_ctx -> OpenTelemetry.Span.hex_span_id(parent_ctx)
-        end
-
-        Logger.info("Completing span | Span ID: #{span_id} | Trace ID: #{trace_id} | Parent Span ID: #{parent_id}")
-        OpenTelemetry.Span.end_span(span_ctx)
-        %{ctx | span_ctx: ctx.parent_ctx, parent_ctx: nil}
-    end
-  end
-
-  def add_event(name, ctx, attributes \\ %{}) do
-    case ctx.span_ctx do
-      nil ->
-        Logger.error("No span context found for event: #{name}")
-        ctx
-      :undefined ->
-        Logger.error("Undefined span context for event: #{name}")
-        ctx
-      span_ctx ->
-        span_id = OpenTelemetry.Span.hex_span_id(span_ctx)
-        trace_id = OpenTelemetry.Span.hex_trace_id(span_ctx)
-
-        Logger.info("Event: #{name} | Span ID: #{span_id} | Trace ID: #{trace_id}")
-        OpenTelemetry.Span.add_event(span_ctx, name, attributes)
-        ctx
-    end
+    Logger.info("""
+    Event: #{name}
+    │ Span ID: #{span_id}
+    └ Trace ID: #{trace_id}
+    """)
   end
 end
