@@ -48,7 +48,8 @@ defmodule OtelDemo.MixProject do
       {:opentelemetry_api, "~> 1.2"},
       {:opentelemetry_exporter, "~> 1.6"},
       {:opentelemetry_phoenix, "~> 1.1"},
-      {:opentelemetry_cowboy, "~> 0.2"}
+      {:opentelemetry_cowboy, "~> 0.2"},
+      {:logger_json, "~> 6.0"}
     ]
   end
 

@@ -61,9 +61,6 @@ config :otel_demo, OtelDemoWeb.Endpoint,
 # Enable dev routes for dashboard and mailbox
 config :otel_demo, dev_routes: true
 
-# Do not include metadata nor timestamps in development logs
-config :logger, :console, format: "[$level] $message\n"
-
 # Set a higher stacktrace during development. Avoid configuring such
 # in production as building large stacktraces may be expensive.
 config :phoenix, :stacktrace_depth, 20
@@ -74,13 +71,22 @@ config :phoenix, :plug_init_mode, :runtime
 # config/dev.exs
 config :opentelemetry,
   span_processor: :batch,
-  traces_exporter: {:otel_exporter_stdout, %{}}
-  # traces_exporter: {:opentelemetry_exporter, %{}}
+  # traces_exporter: {:otel_exporter_stdout, %{}}
+  traces_exporter: {:opentelemetry_exporter, %{}}
 
 # config :opentelemetry_exporter,
 #   otlp_protocol: :http_protobuf,
 #   otlp_endpoint: System.get_env("OTEL_EXPORTER_ENDPOINT", "http://13.233.237.75:4318"),
 #   otlp_headers: []
+
+config :logger, :console,
+  format: {OtelDemoWeb.Tracer, :format},
+  metadata: [
+    :otel_trace_id,
+    :otel_span_id,
+    :request_id
+  ]
+
 
 # Override service name and version if needed
 config :opentelemetry,
@@ -89,7 +95,19 @@ config :opentelemetry,
       name: System.get_env("OTEL_SERVICE_NAME", "otel_demo"),
       version: System.get_env("OTEL_SERVICE_VERSION", "1.0.0")
     }
-  ]
+  ],
+  logger: %{
+    id: :otel_logger,
+    name: "OTel Logger"
+  }
+
+config :opentelemetry_exporter,
+  otlp_protocol: :http_protobuf,
+  otlp_endpoint: System.get_env("OTEL_EXPORTER_ENDPOINT", "http://13.233.237.75:4318"),
+  otlp_headers: [],
+  otlp_traces_exporters: [:otlp],
+  otlp_logs_exporters: [:otlp]
+
 
 # ["http://13.233.237.75:4318"]
 

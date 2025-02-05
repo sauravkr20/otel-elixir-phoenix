@@ -53,7 +53,7 @@ defmodule OtelDemoWeb.Tracer do
       OpenTelemetry.Span.add_event(span_ctx, name, attrs)
       log_event(name, span_ctx)
     else
-      Logger.error("Attempted to add event #{name} to nil span")
+      # Logger.error("Attempted to add event #{name} to nil span")
     end
     ctx
   end
@@ -68,12 +68,12 @@ defmodule OtelDemoWeb.Tracer do
         "no_parent_span"
       end
 
-    Logger.info("""
-    Starting span: #{name}
-      │ Span ID: #{span_id}
-      │ Trace ID: #{trace_id}
-      └ Parent Span ID: #{parent_id}
-    """)
+    # Logger.info("""
+    # Starting span: #{name}
+    #   │ Span ID: #{span_id}
+    #   │ Trace ID: #{trace_id}
+    #   └ Parent Span ID: #{parent_id}
+    # """)
   end
 
   defp log_span_end(span_ctx, parent) do
@@ -86,22 +86,89 @@ defmodule OtelDemoWeb.Tracer do
         "no_parent_span"
       end
 
-    Logger.info("""
-    Completing span
-      │ Span ID: #{span_id}
-      │ Trace ID: #{trace_id}
-      └ Parent Span ID: #{parent_id}
-    """)
+    # Logger.info("""
+    # Completing span
+    #   │ Span ID: #{span_id}
+    #   │ Trace ID: #{trace_id}
+    #   └ Parent Span ID: #{parent_id}
+    # """)
   end
 
   defp log_event(name, span_ctx) do
     span_id = OpenTelemetry.Span.hex_span_id(span_ctx)
     trace_id = OpenTelemetry.Span.hex_trace_id(span_ctx)
 
-    Logger.info("""
-    Event: #{name}
-      │ Span ID: #{span_id}
-      └ Trace ID: #{trace_id}
-    """)
+    # Logger.info("""
+    # Event: #{name}
+    #   │ Span ID: #{span_id}
+    #   └ Trace ID: #{trace_id}
+    # """)
   end
+
+  def log(level, %Context{span_ctx: span_ctx} = ctx, message, attrs \\ %{}) do
+    if span_ctx do
+      timestamp = DateTime.utc_now() |> DateTime.to_unix(:nanosecond)
+
+      event_attrs = Map.merge(%{
+        "log.message" => message,
+        "log.severity" => Atom.to_string(level),
+        "log.timestamp" => timestamp
+      }, attrs)
+
+      OpenTelemetry.Span.add_event(span_ctx, "log", event_attrs)
+
+      log_message(level, message, span_ctx, attrs)
+    else
+      Logger.error("Attempted to add log to nil span: #{message}")
+    end
+  end
+
+  defp log_message(level, message, span_ctx, attrs) do
+    span_id = OpenTelemetry.Span.hex_span_id(span_ctx)
+    trace_id = OpenTelemetry.Span.hex_trace_id(span_ctx)
+
+    log_entry = %{
+      level: level,
+      message: message,
+      span_id: span_id,
+      trace_id: trace_id,
+      attributes: attrs
+    }
+
+    case level do
+      :error -> Logger.error(log_entry)
+      :warn -> Logger.warning(log_entry)
+      :info -> Logger.info(log_entry)
+      :debug -> Logger.debug(log_entry)
+      _ -> Logger.info(log_entry)
+    end
+  end
+
+  def format(level, message, timestamp, metadata) do
+    metadata
+    |> sanitize_metadata()
+    |> Map.put(:timestamp, DateTime.utc_now())
+    |> Map.put(:level, level)
+    |> Map.put(:message, to_string(message))
+    |> Jason.encode!()
+  rescue
+    _ -> Jason.encode!(%{error: "Failed to format log entry"})
+  end
+
+  defp sanitize_metadata(metadata) do
+    metadata
+    |> Enum.map(fn
+      {:request_id, value} -> {:request_id, to_string(value)}
+      {key, value} -> {key, sanitize_value(value)}
+    end)
+    |> Enum.into(%{})
+  end
+
+  defp sanitize_value(value) when is_tuple(value), do: Tuple.to_list(value)
+  defp sanitize_value(%_{} = struct), do: struct |> Map.from_struct() |> sanitize_value()
+  defp sanitize_value(map) when is_map(map), do: Map.new(map, fn {k, v} -> {k, sanitize_value(v)} end)
+  defp sanitize_value(list) when is_list(list), do: Enum.map(list, &sanitize_value/1)
+  defp sanitize_value(value), do: value
+
+
 end
